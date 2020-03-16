@@ -70,7 +70,7 @@ function beforeMetaFunction($event){
 ```  
 ## Привязка ссылок в разделах:  
 Для привязки к разделам используется пользовательское свойство "SEO-ссылки привязка к разделу" (После установки становится доступным)  
-** Это стандартный `<select>` блок в котором мы выбираем ссылки, которые должны быть показаны в разделе**  
+**Это стандартный `<select>` блок в котором мы выбираем ссылки, которые должны быть показаны в разделе**  
 ![Польз. поле](https://gist.githubusercontent.com/Isa3v/0dca1f2ef54f26add307006e2a4ae028/raw/3ef47f7f6828f96fc3af5206d484c2983d61853f/screely-1584361294722.png)  
 
 ## Вывод компонента в шаблоне: 
@@ -84,7 +84,7 @@ $arLinks = explode(";", $section['UF_SEO_LINKS']);
 $APPLICATION->IncludeComponent("isaev:seolinks.list", "", 
   Array(
     "ID" => $arLinks, // Массив ID ссылок
-    "FIELDS" => ['ID', 'FROM', 'TAG_NAME', 'GROUP_NAME', 'TO, 'SORT'], // Можем указать дополнительные поля, которые хотим вывести 
+    "FIELDS" => ['ID', 'FROM', 'TAG_NAME', 'GROUP_NAME', 'TO', 'SORT'], // Можем указать дополнительные поля, которые хотим вывести 
     "SORT_FIELD1" => "SORT", // Сортируем по полю
     "SORT_DIRECTION1" => "ASC"
     "SORT_FIELD2" => "SORT",
