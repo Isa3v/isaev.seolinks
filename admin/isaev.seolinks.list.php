@@ -15,8 +15,6 @@ use \Bitrix\Main\Application;
 use \Bitrix\Main\Loader;
 
 require($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_admin_before.php");
-require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_admin_after.php");
-
 Loader::includeModule('isaev.seolinks');
 \Bitrix\Main\UI\Extension::load("ui.buttons");
 
@@ -32,6 +30,15 @@ $nav = new PageNavigation('request_list');
 // Отключаем кнопку все записи и устанавливаем кол-во элементов
 $nav->allowAllRecords(true)->setPageSize($navParam['nPageSize'])->initFromUri();
 
+// Обработка действий _POST запросов
+$request = Application::getInstance()->getContext()->getRequest();
+
+$postAction = $request->getPost("action_button_".$tableListID);
+if ($postAction == 'delete' || $request->get("action") == 'delete' && $request->get("ID_ITEM")) {
+    $idItem = ($request->getPost("ID_ITEM") ? $request->getPost("ID_ITEM") : $request->get("ID_ITEM"));
+    SeolinksTable::delete($idItem);
+}
+
 /**
  * Получаем все поля нашей таблицы ORM
  */
@@ -40,10 +47,10 @@ $arFilter = [
     'offset' => $nav->getOffset(),
     'limit'  => $nav->getLimit(),
     'order'  => $sort['sort'],
+    'count_total' => true
 ];
 $res = SeolinksTable::getList($arFilter);
-$cnt = SeolinksTable::getCount();
-$nav->setRecordCount($cnt);
+$nav->setRecordCount($res->getCount());
 
 /**
  * Выборка колонок таблицы
@@ -79,25 +86,12 @@ foreach ($res->fetchAll() as $key => $row) {
         [
             'ICONCLASS' => 'menu-popup-item-delete',
             "TEXT"      => Loc::getMessage("isaev.seolinks_DELETE"),
-            "ONCLICK"   => "if(confirm('".Loc::getMessage("isaev.seolinks_REMOVE_CONFIRM")."')) BX.Main.gridManager.getById('".$tableListID."').instance.reloadTable('POST', {'action_button_".$tableListID."':'delete','ID_ITEM':'".$row['ID']."'});"
+            "ONCLICK"   => "if(confirm('".Loc::getMessage("isaev.seolinks_REMOVE_CONFIRM")."')) BX.Main.gridManager.getInstanceById('{$tableListID}').reloadTable('POST', {'action_button_{$tableListID}':'delete','ID_ITEM':'{$row[ID]}'});"
         ]
     ];
 }
 ?>
-
-<?php
-/**
- * Обработка действий _POST запросов
- */
-$request = Application::getInstance()->getContext()->getRequest();
-
-$postAction = $request->getPost("action_button_".$tableListID);
-
-if ($postAction == 'delete' || $request->get("action") == 'delete' && $request->get("ID_ITEM")) {
-    $idItem = ($request->getPost("ID_ITEM") ? $request->getPost("ID_ITEM") : $request->get("ID_ITEM"));
-    SeolinksTable::delete($idItem);
-}
-?>
+<?require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_admin_after.php");?>
 <div class="adm-toolbar-panel-container">
 	<div class="adm-toolbar-panel-flexible-space">
 		<a href="/bitrix/admin/isaev.seolinks.edit.php" class="ui-btn ui-btn-primary"><?=Loc::getMessage("isaev.seolinks_ADD")?></a>
@@ -109,7 +103,7 @@ if ($postAction == 'delete' || $request->get("action") == 'delete' && $request->
  * Displaying the visual part of the list
  * Вывод визуальной части  списка
  */
-$uiComponent = $APPLICATION->IncludeComponent(
+$APPLICATION->IncludeComponent(
     'bitrix:main.ui.grid',
     '',
     [
@@ -117,7 +111,7 @@ $uiComponent = $APPLICATION->IncludeComponent(
         'COLUMNS' => $arColumn,
         'ROWS' => $arRows,
         'NAV_OBJECT' => $nav,
-        'AJAX_ID' => \CAjax::getComponentID('bitrix:main.ui.grid', '.default', ''),
+        'AJAX_ID' => \CAjax::getComponentID('bitrix:main.ui.grid', '', ''),
         'PAGE_SIZES' => [
             ['NAME' => "5", 'VALUE' => '5'],
             ['NAME' => '10', 'VALUE' => '10'],
@@ -145,8 +139,5 @@ $uiComponent = $APPLICATION->IncludeComponent(
         'AJAX_OPTION_HISTORY'       => false
     ]
 );
-
-?>
-<?php
 require($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/epilog_admin.php");
 ?>

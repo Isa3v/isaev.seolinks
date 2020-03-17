@@ -11,4 +11,5 @@ $MESS["isaev.seolinks_LINKS_META_DESCRIPTION"] = "META DESCRIPTION";
 $MESS["isaev.seolinks_LINKS_TEXT"] = "Текст";
 $MESS["isaev.seolinks_LINKS_TAG_NAME"] = "Название тега";
 $MESS["isaev.seolinks_LINKS_GROUP_NAME"] = "Название группы";
+$MESS["isaev.seolinks_LINKS_CHAIN_ITEM"] = "Добавить в цепочку навигации";
 ?>

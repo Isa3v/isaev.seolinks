@@ -29,6 +29,7 @@ Class isaev_seolinks extends CModule {
         $eventManager->registerEventHandler("main", "OnPageStart", self::MODULE_ID, "\Isaev\Seolinks\Handler", "findAndSpoof");
         $eventManager->registerEventHandler('main', 'OnUserTypeBuildList',  self::MODULE_ID, "\Isaev\Seolinks\UserTypeSeo", "getUserTypeDescription");
         $eventManager->registerEventHandler("main", "OnEpilog", self::MODULE_ID, "\Isaev\Seolinks\Handler", "setMeta");
+        $eventManager->registerEventHandler("main", "OnPanelCreate", self::MODULE_ID, "\Isaev\Seolinks\Handler", "eventSetButtonPanel");
         return true;
     }
     public function unInstallEvents() {
@@ -36,6 +37,7 @@ Class isaev_seolinks extends CModule {
         $eventManager->unRegisterEventHandler("main", "OnPageStart", self::MODULE_ID, "\Isaev\Seolinks\Handler", "findAndSpoof");
         $eventManager->unRegisterEventHandler('main', 'OnUserTypeBuildList',  self::MODULE_ID, "\Isaev\Seolinks\UserTypeSeo", "getUserTypeDescription");
         $eventManager->unRegisterEventHandler("main", "OnEpilog", self::MODULE_ID, "\Isaev\Seolinks\Handler", "setMeta");
+        $eventManager->unRegisterEventHandler("main", "OnPanelCreate", self::MODULE_ID, "\Isaev\Seolinks\Handler", "eventSetButtonPanel");
         return true;
     }
 

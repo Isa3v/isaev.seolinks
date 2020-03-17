@@ -39,7 +39,7 @@ class Handler
      * Get the current link and checks for its presence in the link spoofing table
      * Получить текущую ссылку и подменить ее контент
      * Метод подключен к событию "OnPageStart" при установке в /install/index.php
-     * Используется до иницализации контекста и позволяет подменить выводимый контент 
+     * Используется до иницализации контекста и позволяет подменить выводимый контент
      */
     public function findAndSpoof()
     {
@@ -78,6 +78,7 @@ class Handler
         if (!empty($originalLink) && !empty($spoofLink)) {
             $server = $context->getServer();
             $arServer = $server->toArray();
+            // Заменяем значения для подмены
             $arServer['REQUEST_URI'] = $originalLink;
             $arServer['QUERY_STRING'] = parse_url($originalLink)['query'];
             parse_str($arServer['QUERY_STRING'], $arQuery);
@@ -121,15 +122,12 @@ class Handler
         // Find out if the page is spoofed
         // Узнаем является ли страница подмененной
         $arServer = Context::getCurrent()->getServer()->toArray();
-
         // Если это подмененная ссылка
         $currentPage = $arServer['BXISAEVSEO_SPOOF'];
-        
         // Если нет, то узнаем и о ней.
         if (empty($currentPage)) {
             $currentPage = self::getCurrentPage(true);
         }
-
         $arResult = SeolinksTable::getList(['filter' => ['=ACTIVE' => true, '=FROM' => $currentPage]])->fetchRaw();
 
         if (!empty($arResult)) {
@@ -150,8 +148,8 @@ class Handler
             }
             // Add bread crumbs
             // Добавляем хлебные крошки
-            if (!empty($arResult['META_H1'] && $arResult['ADD_CHAIN'])) {
-                $arMeta['chain_item'] = ['url' => $currentPage, 'title' => $originalCurPage['UF_NEW']];
+            if (!empty($arResult['META_H1']) && $arResult['CHAIN_ITEM'] == true) {
+                $arMeta['chain_item'] = ['url' => $arResult['FROM'], 'title' => $arResult['META_H1']];
             }
 
             /**
@@ -174,11 +172,11 @@ class Handler
                 }
                 $arMeta = $eventResult->getParameters();
             }
-
+            
             // Set meta tags
             // Устанавливаем мета-теги
             if (!empty($arMeta['chain_item']['url'] && $arMeta['chain_item']['title'])) {
-                $APPLICATION->AddChainItem($arMeta['chain_item']['url'], $arMeta['chain_item']['title']);
+                $APPLICATION->AddChainItem($arMeta['chain_item']['title'], $arMeta['chain_item']['url']);
             }
             foreach ($arMeta as $name => $value) {
                 if ($name == 'h1') {
@@ -188,5 +186,64 @@ class Handler
                 }
             }
         }
+    }
+
+    /**
+     * Метод назначени на выполнение события "OnPanelCreate" при установке в /install/index.php
+     * Добляет в панели управления кнопки управления СЕО-ссылками
+     */
+    public static function eventSetButtonPanel()
+    {
+        global $APPLICATION;
+        // Путь к редактированию элементов
+        $linkModuleEdit = '/bitrix/admin/isaev.seolinks.edit.php';
+        $linkModuleList = '/bitrix/admin/isaev.seolinks.list.php';
+
+        // Find out if the page is spoofed
+        // Узнаем является ли страница подмененной
+        $arServer = Context::getCurrent()->getServer()->toArray();
+        // Если это подмененная ссылка
+        $currentPage = $arServer['BXISAEVSEO_SPOOF'];
+        // Если нет, то узнаем и о ней.
+        if (empty($currentPage)) {
+            $currentPage = self::getCurrentPage(true);
+        }
+        $arResult = SeolinksTable::getList(['filter' => ['=ACTIVE' => true, '=FROM' => $currentPage], 'select' => ['ID']])->fetchRaw();
+
+        // Добавляем подпункты кнопки
+        $arMenu = [];
+        $arMenu[] = ['SEPARATOR' => "Y"];
+        $arMenu[] = [
+            "TEXT"      => Loc::getMessage('isaev.seolinks_HANDLER_LIST'),
+            "ACTION"    => "window.location = '{$linkModuleList}'",
+        ];
+
+        if (!empty($arResult['ID'])) { // Если это SEO-ссылка
+            $hrefButton = $linkModuleEdit.'?&ID='.$arResult['ID'];
+            $icon = 'bx-panel-short-url-icon';
+            $text = Loc::getMessage('isaev.seolinks_HANDLER_EDIT');
+            $arMenu[] = [
+                "TEXT"      => Loc::getMessage('isaev.seolinks_HANDLER_ADD'),
+                "ACTION"    => "window.location = '{$linkModuleEdit}'",
+            ];
+        } else { // На любой другой странице
+            $hrefButton = $linkModuleEdit.'?fields[TO]='.self::getCurrentPage(true);
+            $icon = "icon-wizard";
+            $text = Loc::getMessage('isaev.seolinks_HANDLER_ADD');
+        }
+
+        // У нас всегда будет кнопка добавить ссылку
+        $APPLICATION->AddPanelButton(
+            [
+                "ID"        => "53134", //определяет уникальность кнопки
+                "TEXT"      => $text,
+                "MAIN_SORT" => 3000, //индекс сортировки для групп кнопок
+                "SORT"      => 5, //сортировка внутри группы
+                "HREF"      => $hrefButton,
+                "ICON"      => $icon, //название CSS-класса с иконкой кнопки
+                "MENU"      => $arMenu
+            ],
+            false
+        );
     }
 }

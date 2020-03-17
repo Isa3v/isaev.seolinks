@@ -29,7 +29,6 @@ $documentRoot = Application::getDocumentRoot();
 $arColumn = \Isaev\SeoLinks\SeolinksTable::getEntity()->getFields();
 $id = (int)$request->get('ID');
 
-
 $arResult = [];
 $errorMessage = '';
 
@@ -85,6 +84,13 @@ if ($id > 0 && !$request->isPost()) {
 }
 
 /**
+ * Если данные пришли с GET запроса
+ */
+if($arGetFields = $request->get('fields')){
+    $arResult = $arGetFields;
+}
+
+/**
  * Визуальная часть
  */
 require($documentRoot."/bitrix/modules/main/include/prolog_admin_after.php");
@@ -134,7 +140,6 @@ if ($errorMessage !== '') {
     \CAdminMessage::ShowMessage(array("DETAILS"=>$errorMessage, "TYPE"=>"ERROR", "MESSAGE"=>Loc::getMessage("isaev.seolinks_ERROR"), "HTML"=>true));
 }
 
-
 /**
  * start tab edit
  */
@@ -166,7 +171,6 @@ foreach ($arColumn as $code => $column) {
         $tabControl->AddEditField($code, $column->getTitle().':', ($column->isRequired() ? true : false), array('size' => $sizeColumn), $value);
     }
 }
-
 $tabControl->Buttons(array("back_url" => $listUrl));
 $tabControl->Show();
 /**

@@ -61,11 +61,17 @@ class SeolinksTable extends \Bitrix\Main\Entity\DataManager
             ),
             'REDIRECT' => array(
                 'data_type' => 'boolean',
+                'values' => array('N', 'Y'),
                 'title' => Loc::getMessage('isaev.seolinks_LINKS_REDIRECT'),
             ),
             'META_H1' => array(
                 'data_type' => 'text',
                 'title' => Loc::getMessage('isaev.seolinks_LINKS_H1'),
+            ),
+            'CHAIN_ITEM' => array(
+                'data_type' => 'boolean',
+                'values' => array('N', 'Y'),
+                'title' => Loc::getMessage('isaev.seolinks_LINKS_CHAIN_ITEM'),
             ),
             'META_TITLE' => array(
                 'data_type' => 'text',
