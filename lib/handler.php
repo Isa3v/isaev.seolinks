@@ -38,10 +38,12 @@ class Handler
     /**
      * Get the current link and checks for its presence in the link spoofing table
      * Получить текущую ссылку и подменить ее контент
+     * Метод подключен к событию "OnPageStart" при установке в /install/index.php
+     * Используется до иницализации контекста и позволяет подменить выводимый контент 
      */
     public function findAndSpoof()
     {
-        // Current page  and Get request
+        // Current page and Get request
         // Текущая ссылка без GET запроса
         $curPage = self::getCurrentPage(false);
 
@@ -110,13 +112,20 @@ class Handler
         }
     }
 
+    /**
+     * Метод назначени на выполнение события "OnEpilog" при установке в /install/index.php
+     * Служит для замены мета-тегов
+     */
     public static function setMeta()
     {
         // Find out if the page is spoofed
         // Узнаем является ли страница подмененной
         $arServer = Context::getCurrent()->getServer()->toArray();
-        $currentPage = $arServer['BXISAEVSEO_SPOOF'];
 
+        // Если это подмененная ссылка
+        $currentPage = $arServer['BXISAEVSEO_SPOOF'];
+        
+        // Если нет, то узнаем и о ней.
         if (empty($currentPage)) {
             $currentPage = self::getCurrentPage(true);
         }
