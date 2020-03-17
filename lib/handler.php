@@ -5,7 +5,7 @@
  */
 namespace Isaev\Seolinks;
 
-use Bitrix\Main\Localization\Loc;
+use \Bitrix\Main\Localization\Loc;
 use \Isaev\Seolinks\SeolinksTable;
 use \Bitrix\Main\Application;
 use \Bitrix\Main\Web\Uri;

@@ -12,7 +12,7 @@
 
 namespace Isaev\Seolinks;
 
-use Bitrix\Main\Localization\Loc;
+use \Bitrix\Main\Localization\Loc;
 Loc::loadMessages(__FILE__);
 
 class SeolinksTable extends \Bitrix\Main\Entity\DataManager
@@ -60,7 +60,7 @@ class SeolinksTable extends \Bitrix\Main\Entity\DataManager
                 'title' => Loc::getMessage('isaev.seolinks_LINKS_TO'),
             ),
             'REDIRECT' => array(
-                'data_type' => 'text',
+                'data_type' => 'boolean',
                 'title' => Loc::getMessage('isaev.seolinks_LINKS_REDIRECT'),
             ),
             'META_H1' => array(
