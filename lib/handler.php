@@ -25,7 +25,7 @@ class Handler
     public function findAndSpoof()
     {
         $arServer = Context::getCurrent()->getServer()->toArray(); // Получаем массив инфо о сервере
-
+        $urlPath = parse_url($arServer['REQUEST_URI'], PHP_URL_PATH); 
         // Search for a link in the table
         // Поиск ссылки в таблице
         $arSpoofPage = SeolinksTable::getList([
@@ -34,19 +34,20 @@ class Handler
                 'LOGIC' => 'OR',                        // Используем выражение OR (ИЛИ)
                 [
                     '!TO' => false,                     // Оригинал (подменяемый) не пустой
-                    '=FROM' => $arServer['SCRIPT_URL'], // Ссылка для вывода подмены - текущаяя
+                    '=FROM' =>  $urlPath, // Ссылка для вывода подмены - текущаяя
                     '=ACTIVE' => true                   // Ссылка активна
                 ],
                 [
                     '=TO' => $arServer['REQUEST_URI'],  // Оригинал (подменяемый) текущая ссылка
                     '!FROM' => false,                   // Ссылка для вывода подмены - не пустая
-                    '=ACTIVE' => true                   // Ссылка активна
+                    '=ACTIVE' => true,                  // Ссылка активна
+                    '=REDIRECT' => 'Y'                  // Нам нужны TO только с редиректом
                 ]
     
             ] 
         ])->fetchRaw();
         if (!empty($arSpoofPage)) {                                                         // Если нашли в таблцие ссылку
-            if ($arSpoofPage['FROM'] == $arServer['SCRIPT_URL']) {                          // Если текущая ссылка служит для вывода подмены
+            if ($arSpoofPage['FROM'] == $urlPath) {                          // Если текущая ссылка служит для вывода подмены
                 self::setSpoof($arSpoofPage['TO'], $arSpoofPage['FROM']);                   // Вызываем метод подмены контента
             } elseif ($arSpoofPage['TO'] == $arServer['REQUEST_URI']) {                     // Если текущая ссылка - подменяемая
                 if ($arSpoofPage['REDIRECT'] == 'Y') {                                      // Если у ссылки указан редирект с подменяемой, на подмену
