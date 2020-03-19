@@ -54,10 +54,20 @@ class SeolinksTable extends \Bitrix\Main\Entity\DataManager
                 'data_type' => 'text',
                 'required' => true,
                 'title' => Loc::getMessage('isaev.seolinks_LINKS_FROM'),
+                'validation' => function() {
+                    return array(
+                        new \Bitrix\Main\Entity\Validator\Unique(Loc::getMessage("isaev.seolinks_FROM_NOT_UNIQUE")), // Уникальность поля
+                    );
+                }
             ),
             'TO' => array(
                 'data_type' => 'text',
                 'title' => Loc::getMessage('isaev.seolinks_LINKS_TO'),
+                'validation' => function() {
+                    return array(
+                        new \Bitrix\Main\Entity\Validator\Unique(Loc::getMessage("isaev.seolinks_TO_NOT_UNIQUE")), // Уникальность поля
+                    );
+                }
             ),
             'REDIRECT' => array(
                 'data_type' => 'boolean',

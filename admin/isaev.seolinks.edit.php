@@ -50,7 +50,7 @@ if ($server->getRequestMethod() == "POST" && ($request->get('save') !== null || 
     /**
      * Обработка действий _POST запросов
      */
-    if ($errorMessage === '') {
+    if (empty($errorMessage)) {
         if ($id > 0) {
             $result = SeolinksTable::update($id, $arResult);
         } else {
@@ -67,7 +67,7 @@ if ($server->getRequestMethod() == "POST" && ($request->get('save') !== null || 
                 LocalRedirect($applyUrl);
             }
         } else {
-            $errorMessage .= implode("\n", $result->getErrorMessages());
+            $errorMessage = $result->getErrorMessages();
         }
     }
 }
@@ -136,8 +136,10 @@ if ($id > 0) {
 }
 $contextMenu = new \CAdminContextMenu($aMenu);
 $contextMenu->Show();
-if ($errorMessage !== '') {
-    \CAdminMessage::ShowMessage(array("DETAILS"=>$errorMessage, "TYPE"=>"ERROR", "MESSAGE"=>Loc::getMessage("isaev.seolinks_ERROR"), "HTML"=>true));
+if (!empty($errorMessage)) {
+    foreach ($errorMessage as $error) {
+        \CAdminMessage::ShowMessage(array("DETAILS"=>$error, "TYPE"=>"ERROR", "MESSAGE"=>Loc::getMessage("isaev.seolinks_ERROR"), "HTML"=>true));
+    }
 }
 
 /**

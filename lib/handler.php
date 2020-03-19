@@ -17,44 +17,41 @@ Loc::loadMessages(__FILE__);
 class Handler
 {
     /**
-     * Getting the current page without calling the $APPLICATION and $_GLOBAL
-     * Получение текущей страницы без вызова $APPLICATION и $_GLOBAL
-     * @param query [boolen] [if true, it will _get] [если true, отдаст ссылку с get запросом]
-     */
-    public static function getCurrentPage($query = false)
-    {
-        $request = Context::getCurrent()->getRequest();
-        $uri = new Uri($request->getRequestUri());
-        // Check if GET Requests
-        // Проверяем отдавать ли GET запрос
-        if ($query === true) {
-            $curPage = $uri->getUri();
-        } else {
-            $curPage = $uri->getPath();
-        }
-        return urldecode($curPage);
-    }
-
-    /**
-     * Get the current link and checks for its presence in the link spoofing table
      * Получить текущую ссылку и подменить ее контент
      * Метод подключен к событию "OnPageStart" при установке в /install/index.php
      * Используется до иницализации контекста и позволяет подменить выводимый контент
+     * ТОЛЬКО для подмены контента! Подмена мета-тегов происходит в другом событии и методе!
      */
     public function findAndSpoof()
     {
-        // Current page and Get request
-        // Текущая ссылка без GET запроса
-        $curPage = self::getCurrentPage(false);
+        $arServer = Context::getCurrent()->getServer()->toArray(); // Получаем массив инфо о сервере
 
         // Search for a link in the table
         // Поиск ссылки в таблице
-        $arSpoofPage = SeolinksTable::getList(['filter' => ['=ACTIVE' => true, '!TO' => false, '=FROM' => $curPage], 'select' => ['FROM','TO']])->fetchRaw();
-        if (!empty($arSpoofPage)) {
-            self::setSpoof($arSpoofPage['TO'], $arSpoofPage['FROM']);
-        } elseif ($arOriginalPage = SeolinksTable::getList(['filter' => ['=ACTIVE' => true, '=TO' => $curPage, '!FROM' => false], 'select' => ['FROM','TO','REDIRECT']])->fetchRaw()) {
-            if ($arOriginalPage['REDIRECT'] == 'Y') {
-                LocalRedirect($arOriginalPage['FROM'], false, '301 Moved permanently');
+        $arSpoofPage = SeolinksTable::getList([
+            'select' => ['FROM','TO','REDIRECT'],       // Нам для подмены нужны только эти поля
+            'filter' => [
+                'LOGIC' => 'OR',                        // Используем выражение OR (ИЛИ)
+                [
+                    '!TO' => false,                     // Оригинал (подменяемый) не пустой
+                    '=FROM' => $arServer['SCRIPT_URL'], // Ссылка для вывода подмены - текущаяя
+                    '=ACTIVE' => true                   // Ссылка активна
+                ],
+                [
+                    '=TO' => $arServer['REQUEST_URI'],  // Оригинал (подменяемый) текущая ссылка
+                    '!FROM' => false,                   // Ссылка для вывода подмены - не пустая
+                    '=ACTIVE' => true                   // Ссылка активна
+                ]
+    
+            ] 
+        ])->fetchRaw();
+        if (!empty($arSpoofPage)) {                                                         // Если нашли в таблцие ссылку
+            if ($arSpoofPage['FROM'] == $arServer['SCRIPT_URL']) {                          // Если текущая ссылка служит для вывода подмены
+                self::setSpoof($arSpoofPage['TO'], $arSpoofPage['FROM']);                   // Вызываем метод подмены контента
+            } elseif ($arSpoofPage['TO'] == $arServer['REQUEST_URI']) {                     // Если текущая ссылка - подменяемая
+                if ($arSpoofPage['REDIRECT'] == 'Y') {                                      // Если у ссылки указан редирект с подменяемой, на подмену
+                    LocalRedirect($arSpoofPage['FROM'], false, '301 Moved permanently');
+                }
             }
         }
     }
@@ -81,7 +78,7 @@ class Handler
             // Заменяем значения для подмены
             $arServer['REQUEST_URI'] = $originalLink;
             $arServer['QUERY_STRING'] = parse_url($originalLink)['query'];
-            parse_str($arServer['QUERY_STRING'], $arQuery);
+            parse_str($arServer['QUERY_STRING'], $arQuery); // Разбирает строку в переменные
             
             // Further we will know without queries to the database that this is a spoofed page
             // Далее мы будем без запросов знать к базе данных, что это поддельная страница
@@ -122,12 +119,9 @@ class Handler
         // Find out if the page is spoofed
         // Узнаем является ли страница подмененной
         $arServer = Context::getCurrent()->getServer()->toArray();
-        // Если это подмененная ссылка
-        $currentPage = $arServer['BXISAEVSEO_SPOOF'];
-        // Если нет, то узнаем и о ней.
-        if (empty($currentPage)) {
-            $currentPage = self::getCurrentPage(true);
-        }
+        // Берем или подмененную ссылку или оригинальную, если нет подмененной
+        $currentPage = (!empty($arServer['BXISAEVSEO_SPOOF']) ? $arServer['BXISAEVSEO_SPOOF'] : $arServer['REQUEST_URI']);
+        // Ищем ссылку в таблице
         $arResult = SeolinksTable::getList(['filter' => ['=ACTIVE' => true, '=FROM' => $currentPage]])->fetchRaw();
 
         if (!empty($arResult)) {
@@ -148,8 +142,8 @@ class Handler
             }
             // Add bread crumbs
             // Добавляем хлебные крошки
-            if (!empty($arResult['META_H1']) && $arResult['CHAIN_ITEM'] == true) {
-                $arMeta['chain_item'] = ['url' => $arResult['FROM'], 'title' => $arResult['META_H1']];
+            if (!empty($arResult['META_H1']) && $arResult['CHAIN_ITEM'] == 'Y') {
+                $arMeta['chain_item'] = ['title' => $arResult['META_H1']];
             }
 
             /**
@@ -175,8 +169,8 @@ class Handler
             
             // Set meta tags
             // Устанавливаем мета-теги
-            if (!empty($arMeta['chain_item']['url'] && $arMeta['chain_item']['title'])) {
-                $APPLICATION->AddChainItem($arMeta['chain_item']['title'], $arMeta['chain_item']['url']);
+            if (!empty($arMeta['chain_item']['title'])) {
+                $APPLICATION->AddChainItem($arMeta['chain_item']['title']);
             }
             foreach ($arMeta as $name => $value) {
                 if ($name == 'h1') {
@@ -202,32 +196,28 @@ class Handler
         // Find out if the page is spoofed
         // Узнаем является ли страница подмененной
         $arServer = Context::getCurrent()->getServer()->toArray();
-        // Если это подмененная ссылка
-        $currentPage = $arServer['BXISAEVSEO_SPOOF'];
-        // Если нет, то узнаем и о ней.
-        if (empty($currentPage)) {
-            $currentPage = self::getCurrentPage(true);
-        }
+        // Берем или подмененную ссылку или оригинальную, если нет подмененной
+        $currentPage = (!empty($arServer['BXISAEVSEO_SPOOF']) ? $arServer['BXISAEVSEO_SPOOF'] : $arServer['REQUEST_URI']);
+
         $arResult = SeolinksTable::getList(['filter' => ['=ACTIVE' => true, '=FROM' => $currentPage], 'select' => ['ID']])->fetchRaw();
 
         // Добавляем подпункты кнопки
         $arMenu = [];
-        $arMenu[] = ['SEPARATOR' => "Y"];
         $arMenu[] = [
             "TEXT"      => Loc::getMessage('isaev.seolinks_HANDLER_LIST'),
             "ACTION"    => "window.location = '{$linkModuleList}'",
         ];
 
-        if (!empty($arResult['ID'])) { // Если это SEO-ссылка
-            $hrefButton = $linkModuleEdit.'?&ID='.$arResult['ID'];
+        if (!empty($arResult['ID'])) {      // Если это SEO-ссылка
+            $hrefButton = "{$linkModuleEdit}?&ID={$arResult[ID]}";
             $icon = 'bx-panel-short-url-icon';
             $text = Loc::getMessage('isaev.seolinks_HANDLER_EDIT');
             $arMenu[] = [
                 "TEXT"      => Loc::getMessage('isaev.seolinks_HANDLER_ADD'),
                 "ACTION"    => "window.location = '{$linkModuleEdit}'",
             ];
-        } else { // На любой другой странице
-            $hrefButton = $linkModuleEdit.'?fields[TO]='.self::getCurrentPage(true);
+        } else {      // На любой другой странице
+            $hrefButton = "{$linkModuleEdit}?fields[TO]={$currentPage}";
             $icon = "icon-wizard";
             $text = Loc::getMessage('isaev.seolinks_HANDLER_ADD');
         }
@@ -235,15 +225,14 @@ class Handler
         // У нас всегда будет кнопка добавить ссылку
         $APPLICATION->AddPanelButton(
             [
-                "ID"        => "53134", //определяет уникальность кнопки
-                "TEXT"      => $text,
-                "MAIN_SORT" => 3000, //индекс сортировки для групп кнопок
-                "SORT"      => 5, //сортировка внутри группы
-                "HREF"      => $hrefButton,
-                "ICON"      => $icon, //название CSS-класса с иконкой кнопки
-                "MENU"      => $arMenu
-            ],
-            false
+                "ID"        => 53134,       // Определяет уникальность кнопки (Рандомный ID)
+                "TEXT"      => $text,       // Текст кнопки
+                "MAIN_SORT" => 3000,        // Индекс сортировки для групп кнопок
+                "SORT"      => 5,           // Сортировка внутри группы
+                "HREF"      => $hrefButton, // Ссылка
+                "ICON"      => $icon,       // Название CSS-класса с иконкой кнопки
+                "MENU"      => $arMenu      // Массив меню
+            ]
         );
     }
 }
