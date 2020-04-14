@@ -159,6 +159,7 @@ class Handler
               *    return $arResult;
               *  }
               */
+            $arMeta['PARAMS'] = $arResult; // Делаем данные тегирования достпуными в эвенте
             $event = new \Bitrix\Main\Event("isaev.seolinks", "beforeMeta", $arMeta);
             $event->send();
             foreach ($event->getResults() as $eventResult) {
@@ -167,6 +168,7 @@ class Handler
                 }
                 $arMeta = $eventResult->getParameters();
             }
+            unset($arMeta['PARAMS']); // Удаляем данные о теге из мета-инфорамции
             
             // Set meta tags
             // Устанавливаем мета-теги

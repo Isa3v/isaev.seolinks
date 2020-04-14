@@ -167,7 +167,13 @@ foreach ($arColumn as $code => $column) {
         $tabControl->AddViewField($code, $column->getTitle().':', $value, ($column->isRequired() ? true : false));
     } elseif ($code == 'TEXT') {
         $value = $request->get($code) ? $request->get($code) : $arResult[$code];
-        $tabControl->AddTextField($code, $column->getTitle().':', $value, ['cols' => $sizeColumn, 'rows' => 10], ($column->isRequired() ? true : false));
+        ob_start();
+        echo '<div  style="width: '.$sizeColumn.'ch;">';
+        \CFileMan::AddHTMLEditorFrame($code, $value, $code, 'html');
+        echo '</div>';
+        $htmlEditor = ob_get_contents();
+        ob_end_clean();
+        $tabControl->AddViewField($code, $column->getTitle().':', $htmlEditor, ($column->isRequired() ? true : false));
     } else {
         $value = $request->get($code) ? $request->get($code) : $arResult[$code];
         $tabControl->AddEditField($code, $column->getTitle().':', ($column->isRequired() ? true : false), array('size' => $sizeColumn), $value);
